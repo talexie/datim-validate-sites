@@ -6,6 +6,7 @@
 
 import pyexcel as pe
 import os
+import inspect
 import numpy as np
 import pandas as pd
 import json
@@ -17,15 +18,23 @@ class MergeFiles:
 	def __init__(self):
 		super(MergeFiles, self).__init__()
 		self.excelFileName = 'fileName'
-		self.dir = os.getcwd()
+		self.currentDir = os.getcwd()
 		self.fileType = 'csv'
+		self.fileDirectory = os.path.abspath(os.path.dirname(__file__))
 		self.today = moment.now().format('YYYY-MM-DD')
-		self.fileName = 'sites.csv'
+		self.path = os.path.abspath(os.path.dirname(__file__))
+		newPath = self.path.split('/')
+		newPath.pop(-1)
+		newPath.pop(-1)
+		self.fileDirectory = '/'.join(newPath)
+		
+		self.fileName = os.path.join(self.fileDirectory,'sites.csv')
 		self.orgUnitName ='Global'
 	# Get Authentication details
 	def getAuth(self):
-		auth = json.loads('.secrets.json')
-		return auth
+		with open(os.path.join(self.fileDirectory,'.secrets.json'),'r') as jsonfile:
+			auth = json.load(jsonfile)
+			return auth
 	# Get the sheets as dictionaries from the workbook
 	def getBookDict(self,fileName):
 		bookDict = pe.get_book_dict(filename=fileName)
@@ -64,6 +73,15 @@ class MergeFiles:
 	def checkSite(self,uid):
 		site = ""
 		return site
+	# Verify site
+	def verifySite(self,row,sites):
+		seen = "False"
+		if(len(sites['organisationUnits']) > 0):
+			for site in sites['organisationUnits']:
+				if(row['organisationunituid'] == site['id']):
+					seen= "True"
+					return seen
+		return seen
 	# check multiple sites
 	def checkMultiSites(self,uids):
 		return sites
@@ -83,19 +101,32 @@ class MergeFiles:
 	# Get sites by orgUnit
 	def getSitesByOrgUnitName(self,orgUnitName,url,username,password,params):
 		url = url+"organisationUnits.json?paging=false&fields=id,name,code,ancestors[id,name,code]&filter=name:eq:"+orgUnitName
+		
 		data = requests.get(url, auth=(username, password),params=params)
 		if(data.status_code == 200):
 			return data.json()
 		else:
 			return 'HTTP_ERROR'
+	# Get sites
+	def getSites(self,url,username,password):
+		url = url + "organisationUnits"
+		params = {"fields": "id,code,name,ancestors[id,code,name]","paging":"false"}
+		data = requests.get(url, auth=(username, password),params=params)
+		if(data.status_code == 200):
+			return data.json()
+		else:
+			return []
 	# start validation
 	def startValidation(self):
 		df = self.getPdFile(self.fileName,self.fileType)
 		authParam = self.getAuth()
-		sites = self.getSitesByOrgUnitName(self.orgUnitName,authParam.url,authParam.username,authParam.password,{})
-		validatedSites = df
+		sites = self.getSites(authParam['url'],authParam['username'],authParam['password'])
+		if(len(sites) > 0):
+			df['Exists'] = df.apply(self.verifySite,args=([sites]),axis=1)
+		else:
+			pass
 		outputFile = self.fileName + "_"+ self.today+ ".csv"
-		validatedSites.to_csv(outputFile, sep=',', encoding='utf-8')
+		df.to_csv(os.path.join(self.fileDirectory,outputFile), sep=',', encoding='utf-8')
 # Start the idsr processing
 if __name__ == "__main__":
 	checkFile= MergeFiles()
