@@ -11,12 +11,17 @@
 - it can generate pandas like dataframes in short codes
 
 # Configure the script
+- Copy the csv file to the directory where the cloned validate scripts and name it "sites.csv"
+  `--sites.csv
+  --.secrets.json
+  ----datim-validate-sites (cloned folder)
+  `
+
 - Create .secrets.json file with the following parameters
 	`{
 	  "username": "admin",
 	  "password": "district",
 	  "url": "https://dhis2.org/instance/api/29/"
+	  "orgUnit":"orgUnit Name to act as root"
 	}`
-- Copy the csv file to the directory and pass it to the script
-
 - Run the script `python3 validate/mergeFiles.py`
