@@ -4,9 +4,8 @@
 # @Date: 10-04-2018
 # @Organisation: JSI/ATC, DATIM
 
-import pyexcel as pe
+#import pyexcel as pe
 import os
-import inspect
 import numpy as np
 import pandas as pd
 import json
@@ -35,14 +34,7 @@ class MergeFiles:
 		with open(os.path.join(self.fileDirectory,'.secrets.json'),'r') as jsonfile:
 			auth = json.load(jsonfile)
 			return auth
-	# Get the sheets as dictionaries from the workbook
-	def getBookDict(self,fileName):
-		bookDict = pe.get_book_dict(filename=fileName)
-		return bookDict
 
-	# Get sheet names
-	def getSheetNames(self,book):
-		return book.keys()
 	# Read in Panda file
 	def getPdFile(self,fileName,type):
 		df = []
@@ -60,48 +52,99 @@ class MergeFiles:
 		dataFrame = pd.DataFrame.from_records(events['rows'],columns=cols)
 		return dataFrame
 
-	# Read donor and receptor ids
-	def getDonorsAndReceptors(self,book):
-		content = {"SiteUpdates":[]}
-		for sheet,sheetData in book:
-			for idx,row in sheetData:
-				content['SiteUpdates'].append(row)
-		sitesBook = pe.Book(content)
-		sitesBook.save_as("Sites Updates.xlsx")
-		return "Site Updates file processed"
-	# Check Uid exists
-	def checkSite(self,uid):
-		site = ""
-		return site
-	# Verify site
-	def verifySite(self,row,sites):
-		seen = "False"
-		if(len(sites['organisationUnits']) > 0):
-			for site in sites['organisationUnits']:
-				if(row['organisationunituid'] == site['id']):
-					seen= "True"
-					return seen
-		return seen
-	# check multiple sites
-	def checkMultiSites(self,uids):
-		return sites
-	# check site name
-	def checkSiteName(self):
-		return True
-	# check parent
-	def checkParent(self,uid,parent):
-		return True
-	# validate receptor if it was created before donor
-	# return True if receptor is older
-	# 
-	def validateReceptor(self,donor,receptor):
-		#if(diff between donor created and receptor created):
+	# Get donor details
+	def getSiteDonorParent(self,row,sites,type):
+		siteParent = ""
+		for key,site in sites.iterrows():
+			if(row['donoruid'] == site['id']):
+				if type == 'PARENTID':
+					siteParent =site['parent.id']
+					return 	siteParent
+				elif type == 'PARENTNAME':
+					siteParent = site['parent.name']
+					return 	siteParent
+				elif type == 'MOHID':
+					siteParent = self.extractMOHID(site['attributeValues'])
+					return 	siteParent
+				elif type == 'CREATED':
+					siteParent = site['created']
+				elif type == 'VERIFYSITE':
+					siteParent = 'True'
+					return 	siteParent
+				else:
+					pass
+			
+		return siteParent
+	# Extract MOH ID from site details
+	def extractMOHID(self,siteAttributeValues):
+		attrValue =""
+		if(len(siteAttributeValues) > 0):
+			for siteAttributeValue in siteAttributeValues:
+				if(siteAttributeValue['attribute']['name'] == 'MOH ID'):
+					attrValue = siteAttributeValue.value
+					return attrValue
+		return attrValue
+	# Get receptor details
+	def getSiteReceptorParent(self,row,sites,type):
+		siteParent = ""
+		for key,site in sites.iterrows():
+			if(row['receptoruid'] == site['id']):
+				if type == 'PARENTID':
+					siteParent = site['parent.id']
+					return 	siteParent
+				elif type == 'PARENTNAME':
+					siteParent = site['parent.name']
+					return 	siteParent
+				elif type == 'MOHID':
+					siteParent = self.extractMOHID(site['attributeValues'])
+					return 	siteParent
+				elif type == 'CREATED':
+					siteParent = site['created']
+				elif type == 'VERIFYSITE':
+					siteParent = True
+					return 	siteParent
+				else:
+					pass
+			else:
+				pass
 
-		return True
+		return siteParent
+	# Check if donor was created before receptor
+	# return True if receptor is older
+	def checkAgeDonor(self,row):
+		siteOld = False
+		if(row['receptorCreated'] > row['donorCreated']):
+			siteOld = True
+			return 	siteOld				
+		return siteOld
+	# Check duplicates
+	def checkDuplicates(self,currentRow,df,column):
+		site = ""
+		count = 0
+		for index,row in df.iterrows():
+			if(row[column] == currentRow[column]):
+				count = count+1
+				if(count > 1):
+					site = row[column]
+					return 	site				
+		return site
+	# Check if a donor is given as receptor or vice versa
+	def checkDuplicatesWithInSites(self,currentRow,df,donor,receptor):
+		site = ""
+		count = 0
+		for index,row in df.iterrows():
+			if(currentRow[donor] == row[receptor]):
+				count = count + 1
+				if (count > 1):
+					site = row[receptor]
+					return 	site				
+		return site
+
+	# 
 	# Get sites by orgUnit
-	def getSitesByOrgUnitName(self,orgUnitName,url,username,password,params):
-		url = url+"organisationUnits.json?paging=false&fields=id,name,code,ancestors[id,name,code]&filter=name:eq:"+orgUnitName
-		
+	def getSitesByOrgUnitName(self,orgUnitName,url,username,password):
+		url = url+"organisationUnits"
+		params = {"fields": "id,code,name,created,parent[id,code,name],attributeValues[value,attribute[name]]","filter":"ancestors.name:ilike:" + orgUnitName,"paging":"false"}
 		data = requests.get(url, auth=(username, password),params=params)
 		if(data.status_code == 200):
 			return data.json()
@@ -120,12 +163,30 @@ class MergeFiles:
 	def startValidation(self):
 		df = self.getPdFile(self.fileName,self.fileType)
 		authParam = self.getAuth()
-		sites = self.getSites(authParam['url'],authParam['username'],authParam['password'])
+		#Validate without OU
+		sites = self.getSitesByOrgUnitName(authParam['orgUnit'],authParam['url'],authParam['username'],authParam['password'])
+		dfSites = pd.io.json.json_normalize(sites['organisationUnits'])
 		if(len(sites) > 0):
-			df['Exists'] = df.apply(self.verifySite,args=([sites]),axis=1)
+			df['Donor Exists'] = df.apply(self.getSiteDonorParent,args=(dfSites,'VERIFYSITE'),axis=1)
+			df['Receptor Exists'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'VERIFYSITE'),axis=1)
+			df['Donor Parent UID'] = df.apply(self.getSiteDonorParent,args=(dfSites,'PARENTID'),axis=1)
+			df['Donor MOH ID'] = df.apply(self.getSiteDonorParent,args=(dfSites,'MOHID'),axis=1)
+			df['Donor Parent Name'] = df.apply(self.getSiteDonorParent,args=(dfSites,'PARENTNAME'),axis=1)
+			df['Receptor Parent UID'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'PARENTID'),axis=1)
+			df['Receptor MOH ID'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'MOHID'),axis=1)
+			df['Receptor Parent Name'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'PARENTNAME'),axis=1)
+			df['Donor Duplicated'] = df.duplicated('donoruid')
+			df['Donor Duplicates'] = df.apply(self.checkDuplicates,args=(df,'donoruid'),axis=1)
+			df['Receptor in Donors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'donoruid','receptoruid'),axis=1)
+			df['Donor in Receptors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'receptoruid','donoruid'),axis=1)
+			## Only useful if type of operation is MERGE,DELETE
+			df['donorCreated'] = df.apply(self.getSiteDonorParent,args=(dfSites,'CREATED'),axis=1)
+			df['receptorCreated'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'CREATED'),axis=1)
+			df['Donor Created Earlier than Receptor'] = df.apply(self.checkAgeDonor,axis=1)
+			
 		else:
 			pass
-		outputFile = self.fileName + "_"+ self.today+ ".csv"
+		outputFile = self.fileName + "_"+ authParam['orgUnit'] +"_"+ self.today+ ".csv"
 		df.to_csv(os.path.join(self.fileDirectory,outputFile), sep=',', encoding='utf-8')
 # Start the idsr processing
 if __name__ == "__main__":
