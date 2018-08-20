@@ -2,7 +2,7 @@
 # @author: Alex Tumwesigye
 # @email: atumwesigye@gmail.com
 # @Date: 10-04-2018
-# @Organisation: JSI/ATC, DATIM
+# @Organisation: JSI/ATC
 
 #import pyexcel as pe
 import os
@@ -27,7 +27,7 @@ class MergeFiles:
 		newPath.pop(-1)
 		self.fileDirectory = '/'.join(newPath)
 		
-		self.fileName = os.path.join(self.fileDirectory,'sites.csv')
+		self.fileName = os.path.join(self.fileDirectory,'orgunits.csv')
 		self.orgUnitName ='Global'
 	# Get Authentication details
 	def getAuth(self):

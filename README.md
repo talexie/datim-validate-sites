@@ -1,6 +1,6 @@
-# Site Validation Scripts
+# Orgunit Validation Scripts
 
-- Validate Sites in multiple sheets
+- Validate orgunits in multiple sheets
 - Extract donor UIDs, receptor UIDs automactically from sheets
 - Create a csv file with donor uid,donor parent uid,receptor uid, receptor parent uid (uid base file)
 - Validate using created date to check if the donor is older that receptor, check non existing uids, etc
@@ -11,10 +11,10 @@
 - it can generate pandas like dataframes in short codes
 
 # Configure the script
-- Copy the csv file to the directory where the cloned validate scripts and name it "sites.csv"
-  `--sites.csv
+- Copy the csv file to the directory where the cloned validate scripts and name it "orgunits.csv"
+  `--orgunits.csv
   --.secrets.json
-  ----datim-validate-sites (cloned folder)
+  ----dhis2-validate-orgunits (cloned folder)
   `
 
 - Create .secrets.json file with the following parameters
