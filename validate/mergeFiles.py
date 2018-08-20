@@ -56,7 +56,7 @@ class MergeFiles:
 	def getSiteDonorParent(self,row,sites,type):
 		siteParent = ""
 		for key,site in sites.iterrows():
-			if(row['donoruid'] == site['id']):
+			if(row['donor_or_current_site_DATIM_uid'] == site['id']):
 				if type == 'PARENTID':
 					siteParent =site['parent.id']
 					return 	siteParent
@@ -81,14 +81,14 @@ class MergeFiles:
 		if(len(siteAttributeValues) > 0):
 			for siteAttributeValue in siteAttributeValues:
 				if(siteAttributeValue['attribute']['name'] == 'MOH ID'):
-					attrValue = siteAttributeValue.value
+					attrValue = siteAttributeValue['value']
 					return attrValue
 		return attrValue
 	# Get receptor details
 	def getSiteReceptorParent(self,row,sites,type):
 		siteParent = ""
 		for key,site in sites.iterrows():
-			if(row['receptoruid'] == site['id']):
+			if(row['receptor_site_DATIM_uid'] == site['id']):
 				if type == 'PARENTID':
 					siteParent = site['parent.id']
 					return 	siteParent
@@ -175,10 +175,10 @@ class MergeFiles:
 			df['Receptor Parent UID'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'PARENTID'),axis=1)
 			df['Receptor MOH ID'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'MOHID'),axis=1)
 			df['Receptor Parent Name'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'PARENTNAME'),axis=1)
-			df['Donor Duplicated'] = df.duplicated('donoruid')
-			df['Donor Duplicates'] = df.apply(self.checkDuplicates,args=(df,'donoruid'),axis=1)
-			df['Receptor in Donors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'donoruid','receptoruid'),axis=1)
-			df['Donor in Receptors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'receptoruid','donoruid'),axis=1)
+			df['Donor Duplicated'] = df.duplicated('donor_or_current_site_DATIM_uid')
+			df['Donor Duplicates'] = df.apply(self.checkDuplicates,args=(df,'donor_or_current_site_DATIM_uid'),axis=1)
+			df['Receptor in Donors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'donor_or_current_site_DATIM_uid','receptor_site_DATIM_uid'),axis=1)
+			df['Donor in Receptors'] = df.apply(self.checkDuplicatesWithInSites,args=(df,'receptor_site_DATIM_uid','donor_or_current_site_DATIM_uid'),axis=1)
 			## Only useful if type of operation is MERGE,DELETE
 			df['donorCreated'] = df.apply(self.getSiteDonorParent,args=(dfSites,'CREATED'),axis=1)
 			df['receptorCreated'] = df.apply(self.getSiteReceptorParent,args=(dfSites,'CREATED'),axis=1)
