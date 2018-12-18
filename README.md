@@ -7,7 +7,7 @@
 - Generate summarized data for each period
 - Generate all data for each period by data element or orgunit
 - Generate the structure file and validate against the existing file to remove duplicates
-- Proposed python utils [Pandas, openpyxl but pyexcel is preferred as 
+- Proposed python utils [Pandas, openpyxl but pyexcel is preferred as
 - it can generate pandas like dataframes in short codes
 
 # Configure the script
@@ -24,4 +24,4 @@
 	  "url": "https://dhis2.org/instance/api/29/"
 	  "orgUnit":"orgUnit Name to act as root"
 	}`
-- Run the script `python3 validate/mergeFiles.py`
+- Run the script `python3 validate/ValidateOrgUnits.py`

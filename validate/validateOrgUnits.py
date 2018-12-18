@@ -26,7 +26,7 @@ class ValidateOrgUnits:
 		newPath.pop(-1)
 		self.fileDirectory = '/'.join(newPath)
 
-		self.fileName = os.path.join(self.fileDirectory,'sitemoz.csv')
+		self.fileName = os.path.join(self.fileDirectory,'sites.csv')
 		self.orgUnitName ='Global'
 	# Get Authentication details
 	def getAuth(self):
@@ -39,7 +39,7 @@ class ValidateOrgUnits:
 		df = []
 		if type == 'csv':
 			fileName="{}.{}".format(fileName,type)
-			df = pd.read_csv(fileName,encoding='utf-8')
+			df = pd.read_csv(fileName,encoding='ISO-8859-1')
 		elif type == 'json':
 			fileName="{}.{}".format(fileName,type)
 			df= pd.read_json(fileName)
@@ -189,5 +189,5 @@ class ValidateOrgUnits:
 # Start the validation process
 if __name__ == "__main__":
 	checkSites= ValidateOrgUnits()
-	checkSites.startValidation(folder='datim',fileName='sites1',type='csv')
+	checkSites.startValidation(folder='validations',fileName='sitedata',type='csv')
 #main()
