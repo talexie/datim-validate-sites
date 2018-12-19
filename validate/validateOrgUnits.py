@@ -10,6 +10,7 @@ import pandas as pd
 import json
 import requests
 import moment
+import chardet
 
 class ValidateOrgUnits:
 	"""docstring for ValidateOrgUnits"""
@@ -33,6 +34,12 @@ class ValidateOrgUnits:
 		with open(os.path.join(self.fileDirectory,'.secrets.json'),'r') as jsonfile:
 			auth = json.load(jsonfile)
 			return auth
+	# Get encoding from files
+	def getEncoding(self,fileName):
+		openFile = open(fileName,'rb').read()
+		result = chardet.detect(openFile)
+		characterEncoding = result['encoding']
+		return characterEncoding
 
 	# Read in Panda file
 	def getPdFile(self,fileName,type):
