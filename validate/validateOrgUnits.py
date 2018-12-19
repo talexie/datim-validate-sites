@@ -166,19 +166,25 @@ class ValidateOrgUnits:
 		sites = self.getSitesByOrgUnitName(authParam['orgUnit'],authParam['url'],authParam['username'],authParam['password'])
 		dfSites = pd.io.json.json_normalize(sites['organisationUnits'])
 		if(len(sites) > 0):
-			validatedSites = self.validateSites(validate=df,reference=dfSites,type='csv',leftColumns=['donor_uid'],rightColumns=['id'])
-			donorSites = self.renameColumns(source=validatedSites,columns={"id":"ref_donor_id","name":"ref_donor_name","code":"ref_donor_code","parent.id":"ref_donor_parentid","parent.code":"ref_donor_parentcode","parent.name":"ref_donor_parentname","created":"ref_donor_created"})
-			validSites = self.validateSites(validate=donorSites,reference=dfSites,type='csv',leftColumns=['site_uid'],rightColumns=['id'])
-			#
-			validSites['Donor Exists'] = validSites['ref_donor_id'].notna()
-			validSites['Site Exists'] = validSites['id'].notna()
-			validSites['Donor Duplicated'] = validSites.duplicated('donor_uid',keep=False)
-			validSites['Possible Donor Duplicates'] = validSites.duplicated(subset=['ref_donor_name','ref_donor_parentid'],keep=False)
-			validSites['Possible Site Duplicates'] = validSites.duplicated(subset=['name','parent.id'],keep=False)
-			validSites['Site in Donors'] = validSites.apply(self.checkDuplicatesWithInSites,args=(validSites,'donor_uid','site_uid'),axis=1)
-			validSites['Donor in Sites'] = validSites.apply(self.checkDuplicatesWithInSites,args=(validSites,'site_uid','donor_uid'),axis=1)
-			## Only useful if type of operation is MERGE,DELETE
-			validSites['Donor Created Earlier than Site'] = validSites.apply(self.checkAge,args=('created','ref_donor_created'),axis=1)
+			if len(df['donor_uid'].value_counts() > 0):
+				validatedSites = self.validateSites(validate=df,reference=dfSites,type='csv',leftColumns=['donor_uid'],rightColumns=['id'])
+				donorSites = self.renameColumns(source=validatedSites,columns={"id":"ref_donor_id","name":"ref_donor_name","code":"ref_donor_code","parent.id":"ref_donor_parentid","parent.code":"ref_donor_parentcode","parent.name":"ref_donor_parentname","created":"ref_donor_created"})
+				validSites = self.validateSites(validate=donorSites,reference=dfSites,type='csv',leftColumns=['site_uid'],rightColumns=['id'])
+				validSites['Donor Exists'] = validSites['ref_donor_id'].notna()
+				validSites['Donor Duplicated'] = validSites.duplicated('donor_uid',keep=False)
+				validSites['Possible Donor Duplicates'] = validSites.duplicated(subset=['ref_donor_name','ref_donor_parentid'],keep=False)
+				validSites['Site in Donors'] = validSites.apply(self.checkDuplicatesWithInSites,args=(validSites,'donor_uid','site_uid'),axis=1)
+				validSites['Donor in Sites'] = validSites.apply(self.checkDuplicatesWithInSites,args=(validSites,'site_uid','donor_uid'),axis=1)
+				# Only useful if type of operation is MERGE,DELETE
+				validSites['Donor Created Earlier than Site'] = validSites.apply(self.checkAge,args=('created','ref_donor_created'),axis=1)
+				validSites['Site Exists'] = validSites['id'].notna()
+				validSites['Possible Site Duplicates'] = validSites.duplicated(subset=['name','parent.id'],keep=False)
+			else:
+				validSites = self.validateSites(validate=df,reference=dfSites,type='csv',leftColumns=['site_uid'],rightColumns=['id'])
+				#
+				validSites['Site Exists'] = validSites['id'].notna()
+				validSites['Possible Site Duplicates'] = validSites.duplicated(subset=['name','parent.id'],keep=False)
+
 			fullValidSites = self.analyzeDuplicates(reference=dfSites,type='system',dupColumns=['name','parent.id'])
 		else:
 			pass
@@ -189,5 +195,5 @@ class ValidateOrgUnits:
 # Start the validation process
 if __name__ == "__main__":
 	checkSites= ValidateOrgUnits()
-	checkSites.startValidation(folder='validations',fileName='sitedata',type='csv')
+	checkSites.startValidation(folder='validations',fileName='test',type='csv')
 #main()
