@@ -206,5 +206,5 @@ class ValidateOrgUnits:
 # Start the validation process
 if __name__ == "__main__":
 	checkSites= ValidateOrgUnits()
-	checkSites.startValidation(folder='validations',fileName='4358',type='csv')
+	checkSites.startValidation(folder='validations',fileName='test',type='csv')
 #main()
