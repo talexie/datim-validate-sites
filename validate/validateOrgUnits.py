@@ -6,7 +6,7 @@
 
 import os
 import numpy as np
-import pandas as pd
+import pandas as pd,jellyfish as jf
 import json
 import requests
 import moment
@@ -165,6 +165,9 @@ class ValidateOrgUnits:
 	# Rename columns in a dataframe
 	def renameColumns(self,source=None,columns=None):
 		return source.rename(index=str,columns=columns)
+	# Compare strings using Jaro Distance
+	def getJaroDistance(self,left=None,right=None):
+		return (jf.jaro_distance(left,right)* 100)
 	# start validation
 	def startValidation(self,folder=None,fileName=None,type='csv'):
 		df = self.getPdFile(fileName,type)
@@ -188,6 +191,7 @@ class ValidateOrgUnits:
 				validSites['Possible Site Duplicates'] = validSites.duplicated(subset=['name','parent.id'],keep=False)
 			else:
 				validSites = self.validateSites(validate=df,reference=dfSites,type='csv',leftColumns=['site_uid'],rightColumns=['id'])
+				#validSites = self.validateSites(validate=df,reference=dfSites,type='csv',leftColumns=['site_name'],rightColumns=['name'])
 				#
 				validSites['Site Exists'] = validSites['id'].notna()
 				validSites['Possible Site Duplicates'] = validSites.duplicated(subset=['name','parent.id'],keep=False)
@@ -202,5 +206,5 @@ class ValidateOrgUnits:
 # Start the validation process
 if __name__ == "__main__":
 	checkSites= ValidateOrgUnits()
-	checkSites.startValidation(folder='validations',fileName='test',type='csv')
+	checkSites.startValidation(folder='validations',fileName='4358',type='csv')
 #main()
